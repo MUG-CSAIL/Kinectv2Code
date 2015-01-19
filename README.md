@@ -1,0 +1,1 @@
+First step towards having a working UDP server that streams Kinect images to a client. 
