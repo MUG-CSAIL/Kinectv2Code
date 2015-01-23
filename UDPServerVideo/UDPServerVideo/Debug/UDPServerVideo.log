@@ -1,4 +1,4 @@
-﻿Build started 1/23/2015 4:32:23 PM.
+﻿Build started 1/23/2015 5:08:50 PM.
      1>Project "C:\Users\D\Documents\Visual Studio 2013\Projects\UDPServerVideo\UDPServerVideo\UDPServerVideo.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D WIN32 /D _DEBUG /D _CONSOLE /D _LIB /D _UNICODE /D UNICODE /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt UDPServerVideo.cpp
@@ -10,4 +10,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:01.26
+Time Elapsed 00:00:01.35

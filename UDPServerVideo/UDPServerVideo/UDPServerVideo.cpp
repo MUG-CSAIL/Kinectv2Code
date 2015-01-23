@@ -123,7 +123,7 @@ void main(int argc, _TCHAR* argv[])
 		int dataLeft = sizeof(image); //how much data is left before the current image has been completely transmitted
 		int failCount = 0; //number of failed attempts before we give up and disconnect. 
 		BYTE sequenceNum = 0; //for bookkeeping, the frame number in our infinite sequence, ranges from 0-255 then loops.
-		BYTE fragmentNum = 0; //for bookkeeping, what fragment of the current frame is this packet?
+		BYTE fragmentNum = 0; //for bookkeeping, what fragment of the current frame is this packet? from 0-6 for 7 total frags
 		char * packetPointer = &packet[0];
 		/* This will be the main loop for our transmission function. What we want to do is as follows.
 		 * We have an image buffer that contains the entire image. This is too big to send in one packet.
@@ -145,10 +145,11 @@ void main(int argc, _TCHAR* argv[])
 		while (1)
 		{
 			ZeroMemory(packet, sizeof(packet));  //zero the packet buffer.
-			//memset(packetPointer, sequenceNum, sizeof(sequenceNum));
-			//packetPointer += sizeof(sequenceNum);
-			//memset(packetPointer, fragmentNum, sizeof(fragmentNum));
-			memcpy(packet, imagePointer, sizeof(packet)); //copy a packet's worth of data starting from pointer location
+			memset(packetPointer, sequenceNum, sizeof(sequenceNum)); //set sequence number as first byte
+			packetPointer += sizeof(sequenceNum); //move past the newly set sequence number 
+			memset(packetPointer, fragmentNum, sizeof(fragmentNum)); //set the fragment number as second byte
+			packetPointer += sizeof(fragmentNum); //move past the fragment number
+			memcpy(packetPointer, imagePointer, sizeof(packet)-2); //copy a packet's worth of data starting from pointer location
 			sent = sendto(serverSocket, packet, sizeof(packet), 0, (sockaddr*)&to, tolen); //try to send the packet
 			if (sent == SOCKET_ERROR){
 				failCount += 1;
@@ -160,13 +161,20 @@ void main(int argc, _TCHAR* argv[])
 				}
 				continue; //don't do any further adjustments, just zero the packet and try again.
 			}
-			imagePointer += sizeof(packet); //increment image pointer, since we sent successfully
-			dataLeft -= sent;
-			sentTotal += sent;
-			while (sentTotal < FRAME_SIZE) //until we finish sending the image, repeat the above.
+			imagePointer += sizeof(packet)-2; //increment image pointer, since we sent successfully. -2 because of header.
+			dataLeft -= sent+2; //we have two extra bytes left to transmit because of the space taken by the header
+			sentTotal += sent-2;
+			fragmentNum += 1;
+			//packet pointer now points to beyond fragment number, which needs to be fixed.
+			packetPointer = &packet[0]; //reset pointer to start of packet
+			while (sentTotal < FRAME_SIZE) //until we finish sending the image, repeat the above with one slight changes
 			{
-				ZeroMemory(packet, sizeof(packet));
-				memcpy(packet, imagePointer, min(sizeof(packet), dataLeft));
+				ZeroMemory(packet, sizeof(packet)); //clear out packet
+				memset(packetPointer, sequenceNum, sizeof(sequenceNum)); //set sequence num again
+				packetPointer += sizeof(sequenceNum); //increment pointer
+				memset(packetPointer, fragmentNum, sizeof(fragmentNum)); //set frag number
+				packetPointer += sizeof(fragmentNum); //increment pointer
+				memcpy(packetPointer, imagePointer, min(sizeof(packet)-2, dataLeft)); //put image data in rest of packet
 				sent = sendto(serverSocket, packet, sizeof(packet), 0, (sockaddr*)&to, tolen); //try to send the rest of the image
 				if (sent == SOCKET_ERROR)
 				{
@@ -180,16 +188,21 @@ void main(int argc, _TCHAR* argv[])
 					}
 					continue;
 				}
-				imagePointer += min(sizeof(packet), dataLeft); //increment image pointer.
-				dataLeft -= sent;
-				sentTotal += sent;
+				imagePointer += min(sizeof(packet)-2, dataLeft); //increment image pointer.
+				packetPointer = &packet[0]; //reset packet pointer
+				fragmentNum += 1; //increase fragment number
+				dataLeft -= sent+2; //since subtracting, have to increment
+				sentTotal += sent-2;
 				Sleep(1);
 			}
-			printf("Full image has been sent. Check the client.\n");
+			printf("Full image has been sent. Resetting data.\n");
 			imagePointer = &image[0]; //we've sent the whole image at this point, so reset the image pointer
 			failCount = 0; //reset fail counter too
 			sentTotal = 0; //reset total bytes sent counter
+			sequenceNum = (sequenceNum + 1) % 256; //increment sequence number
+			fragmentNum = 0; //reset fragment number 
 			dataLeft = sizeof(image); //reset how much data is left to send.
+			packetPointer = &packet[0]; //lastly, reset packet pointer
 			//start over at start of loop.
 		}
 	}

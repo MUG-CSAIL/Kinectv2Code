@@ -101,13 +101,13 @@ void main(int argc, _TCHAR* argv[])
 			}
 			imagePointer = &image[0];
 			printf("Received Byte Total is equal to or exceeds frame size!");
-			printf("Received image.\n First thing in image: %c\n", image[0]);
-			printf("Second part of image starts with: %c\n", image[BUFSIZE]);
-			printf("Third part of image starts with: %c\n", image[BUFSIZE * 2]);
-			printf("Fourth part of image starts with: %c\n", image[BUFSIZE * 3]);
-			printf("Fifth part of image starts with: %c\n", image[BUFSIZE * 4]);
-			printf("Sixth part of image starts with: %c\n", image[BUFSIZE * 5]);
-			printf("Last part of image starts with: %c\n", image[BUFSIZE * 6]);
+			printf("Received image.\n First part of image starts with sequence number %u and fragment number %u\n", image[0], image[1]);
+			printf("Second part of image starts with sequence number %u and fragment number %u\n", image[BUFSIZE], image[BUFSIZE+1]);
+			printf("Third part of image starts with sequence number %u and fragment number %u\n", image[BUFSIZE * 2], image[BUFSIZE * 2 +1]);
+			printf("Fourth part of image starts with sequence number %u and fragment number %u\n", image[BUFSIZE * 3], image[BUFSIZE * 3 +1]);
+			printf("Fifth part of image starts with sequence number %u and fragment number %u\n", image[BUFSIZE * 4], image[BUFSIZE * 4 +1]);
+			printf("Sixth part of image starts with sequence number %u and fragment number %u\n", image[BUFSIZE * 5], image[BUFSIZE * 5 +1]);
+			printf("Last part of image starts with sequence number %u and fragment number %u\n", packet[0], packet[1]);
 			receivedByteTotal = 0;
 			ZeroMemory(image, sizeof(image));
 			dataLeft = sizeof(image);
