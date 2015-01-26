@@ -1,0 +1,24 @@
+package clientcode;
+
+public class FrameProcessorThread implements Runnable {
+
+	final int FRAME_SIZE = 434176;
+	final int BUFSIZE = 65507;
+	static byte[] frame = new byte[FRAME_SIZE];
+	
+	FrameProcessorThread(byte[] frame){
+		this.frame = frame;
+	}
+	
+	char[] imageBuffer = new char[FRAME_SIZE];
+	@Override
+	public void run() 
+	{
+		// TODO Auto-generated method stub
+	}
+
+	public static void main(String args[]) 
+	{
+		(new Thread(new FrameProcessorThread(frame))).start();
+	}
+}

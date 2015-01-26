@@ -1,0 +1,11 @@
+package clientcode;
+
+public class frameProcessor implements Runnable {
+
+	@Override
+	public void run() {
+		// TODO Auto-generated method stub
+
+	}
+
+}

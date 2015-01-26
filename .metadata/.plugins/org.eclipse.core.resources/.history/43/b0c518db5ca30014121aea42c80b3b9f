@@ -1,0 +1,60 @@
+package clientcode;
+
+import java.io.*;
+import java.net.*;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.concurrent.Semaphore;
+//import clientcode.FrameProcessorThread;
+
+public class Client {
+	static final int FRAME_SIZE = 434176;
+	static final int BUFSIZE = 65507;
+	static final int SERVER_PORT = 10801;
+	static Object lock = new Object(); //just to have something to lock on
+	
+	public static void main(String args[]) throws Exception
+	   {
+		ByteBuffer image = ByteBuffer.allocate(FRAME_SIZE);
+	      BufferedReader inFromUser =
+	         new BufferedReader(new InputStreamReader
+	                     (System.in)); //to get start message to send.
+	      DatagramSocket clientSocket = new DatagramSocket();
+	      //String clientIP = "xxx.xxx.xxx.xxx"; //fill in later when this works locally
+	      //InetAddress IPAddress = //InetAddress.getByName(clientIP);
+	      InetAddress serverAddress = InetAddress.getLocalHost(); //send to ourselves.
+	      byte[] sendData = new byte[1024]; //short since we just need to send some small message
+	      byte[] receiveData = new byte[BUFSIZE]; //packet size from C++ client code
+	      DatagramPacket receivePacket = 
+	    		  new DatagramPacket(receiveData,receiveData.length); //make packet for receiving frags
+	      System.out.println("Please type any short message to begin communication.");
+	      String sentence = inFromUser.readLine(); //read in whatever the start message is
+	      sendData = sentence.getBytes();  //convert it to bytes
+	      DatagramPacket sendPacket =
+	         new DatagramPacket(sendData, sendData.length, 
+	                      serverAddress, SERVER_PORT); //create packet to send to server
+	      
+	      try{
+	      clientSocket.send(sendPacket); //send start message
+	      }
+	      catch(Exception e){
+	    	  System.err.println("Send failed to complete.");
+	    	  e.printStackTrace();
+	      }
+	      int fragNum;
+	      int sequenceNum;
+	      //main loop goes below when this works  
+	      synchronized(lock){
+	      clientSocket.receive(receivePacket); //receive frame fragment
+	      fragNum = receiveData[1]; 
+	      sequenceNum = receiveData[0];
+	      receiveData = Arrays.copyOfRange(receiveData, 2, receiveData.length-1);
+	      image.put(receiveData, BUFSIZE*fragNum, receiveData.length);
+	      System.out.printf("Got frame: %s", receiveData);
+	      clientSocket.close();
+	      }
+	    	  
+	      
+	   }
+}
+

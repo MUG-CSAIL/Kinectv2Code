@@ -18,6 +18,9 @@ getsockopt(serverSocket, SOL_SOCKET, SO_MAX_MSG_SIZE, (char *)&optval, &optlen);
 printf("Max size of buffer to send is %d.", optval);
 */
 
+struct sockaddr_in local; //structure to store our information as a server
+struct sockaddr_in to; //structure to store info from our one client
+
 //Just a function to start Winsock up. 
 void InitWinsock()
 {
@@ -54,21 +57,7 @@ return recvfrom(serverSocket, buffer, sizeof(buffer), 0, (sockaddr*)&from, &from
 }
 */
 
-void main(int argc, _TCHAR* argv[])
-{
-	SOCKET serverSocket;
-
-	InitWinsock(); //start up Winsock.
-	serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); //Make a socket.
-	if (serverSocket == INVALID_SOCKET) //Make sure we made the socket successfully.
-	{
-		fprintf(stderr, "Could not create socket.\n");
-		WSACleanup();
-		exit(-1);
-	}
-
-	struct sockaddr_in local; //structure to store our information as a server
-	struct sockaddr_in to; //structure to store info from our one client
+int setUpSockAddrs(SOCKET serverSocket){
 	memset((void *)&local, '\0', sizeof(struct sockaddr_in));  //clear out memory for the struct
 	memset((void *)&to, '\0', sizeof(struct sockaddr_in));
 
@@ -89,7 +78,7 @@ void main(int argc, _TCHAR* argv[])
 	to.sin_addr.S_un.S_un_b.s_b2 = (unsigned char)0;
 	to.sin_addr.S_un.S_un_b.s_b3 = (unsigned char)0;
 	to.sin_addr.S_un.S_un_b.s_b4 = (unsigned char)1;
-	int tolen = sizeof(to); //calculate size, we'll use this later.
+	
 
 	//At this point we should have a valid socket. Let's try binding it.
 	if (bind(serverSocket, (sockaddr*)&local, sizeof(local)) == -1){ //one line check for bind attempt and success detection
@@ -98,26 +87,50 @@ void main(int argc, _TCHAR* argv[])
 		WSACleanup();
 		exit(-1);
 	}
+	return 0;
+}
 
+int createFakeImage(char * imagePointer){
+	for (int i = 0; i < NEEDED_PACKETS; i++){
+		char number = '1' + i;
+		memset(imagePointer, number, BUFSIZE - 1);
+		imagePointer += BUFSIZE - 1;
+		char special = '0' + 9;
+		memset(imagePointer, special, 1);
+		imagePointer += 1;
+	}
+	return 0;
+}
+
+void main(int argc, _TCHAR* argv[])
+{
+	SOCKET serverSocket;
+
+	InitWinsock(); //start up Winsock.
+	serverSocket = socket(AF_INET, SOCK_DGRAM, IPPROTO_UDP); //Make a socket.
+	if (serverSocket == INVALID_SOCKET) //Make sure we made the socket successfully.
+	{
+		fprintf(stderr, "Could not create socket.\n");
+		WSACleanup();
+		exit(-1);
+	}
+
+	setUpSockAddrs(serverSocket); //set up all the address information needed to do the transmissions
+	
 	int failCount = 0;
-
+	int tolen = sizeof(to); //calculate size, we'll use this later.
 	char packet[BUFSIZE]; //buffer where we'll put messages.
 	ZeroMemory(packet, sizeof(packet));
 	char image[FRAME_SIZE];
 	ZeroMemory(image, sizeof(image));
 	char * imagePointer = &image[0];
-
-	//for loop to create image, set of 7 numbers in sequence; packet 1 is 11111111..., packet 2 is 222222..., etc up to NEEDED_PACKETS.
-	for (int i = 0; i < NEEDED_PACKETS; i++){
-		char number = '0' + i;
-		memset(imagePointer, number, BUFSIZE);
-		imagePointer += BUFSIZE;
-	}
-	imagePointer = &image[0]; //reset image pointer
+	createFakeImage(imagePointer); //simple for loop to make a tailored image so I know if it works. DOES NOT RESET IMAGE POINTER WHEN DONE.
+	imagePointer = &image[0]; //reset image pointer, since it wasn't done in the method. much easier to do it safely here.
+	
 	printf("Waiting...\n"); //print to console to show server is up and waiting for a connection, just a test before beginning
 	if (recvfrom(serverSocket, packet, sizeof(packet), 0, (sockaddr*)&to, &tolen) != SOCKET_ERROR) //if recvfrom succeeds,
 	{
-		printf("Received message from client: %s\n", packet);
+		//printf("Received message from client: %s\n", packet);
 		int sent; //how many bytes we just send with our latest attempt at transmission
 		int sentTotal = 0; //how many bytes we have sent in total through transmission
 		int dataLeft = sizeof(image); //how much data is left before the current image has been completely transmitted
@@ -125,6 +138,7 @@ void main(int argc, _TCHAR* argv[])
 		BYTE sequenceNum = 0; //for bookkeeping, the frame number in our infinite sequence, ranges from 0-255 then loops.
 		BYTE fragmentNum = 0; //for bookkeeping, what fragment of the current frame is this packet? from 0-6 for 7 total frags
 		char * packetPointer = &packet[0];
+		
 		/* This will be the main loop for our transmission function. What we want to do is as follows.
 		 * We have an image buffer that contains the entire image. This is too big to send in one packet.
 		 * So we have a packet buffer into which we can copy parts of the image. We also need to modify the packet
@@ -143,13 +157,19 @@ void main(int argc, _TCHAR* argv[])
 		 * We just keep streaming whatever is passed in.
 		 */
 		while (1)
+
 		{
+			//char testPacket[2] = { 'a', 'b' };
+			//sent = sendto(serverSocket, testPacket, sizeof(testPacket), 0, (sockaddr*)&to, tolen); //try to send the packet
+			
 			ZeroMemory(packet, sizeof(packet));  //zero the packet buffer.
 			memset(packetPointer, sequenceNum, sizeof(sequenceNum)); //set sequence number as first byte
 			packetPointer += sizeof(sequenceNum); //move past the newly set sequence number 
 			memset(packetPointer, fragmentNum, sizeof(fragmentNum)); //set the fragment number as second byte
 			packetPointer += sizeof(fragmentNum); //move past the fragment number
 			memcpy(packetPointer, imagePointer, sizeof(packet)-2); //copy a packet's worth of data starting from pointer location
+			printf("Sanity check: the last thing in the packet is %c\n", packet[65506]);
+			Sleep(10000);
 			sent = sendto(serverSocket, packet, sizeof(packet), 0, (sockaddr*)&to, tolen); //try to send the packet
 			if (sent == SOCKET_ERROR){
 				failCount += 1;
@@ -161,6 +181,7 @@ void main(int argc, _TCHAR* argv[])
 				}
 				continue; //don't do any further adjustments, just zero the packet and try again.
 			}
+			/*
 			imagePointer += sizeof(packet)-2; //increment image pointer, since we sent successfully. -2 because of header.
 			dataLeft -= sent+2; //we have two extra bytes left to transmit because of the space taken by the header
 			sentTotal += sent-2;
@@ -195,7 +216,9 @@ void main(int argc, _TCHAR* argv[])
 				sentTotal += sent-2;
 				Sleep(1);
 			}
+			*/
 			printf("Full image has been sent. Resetting data.\n");
+			break;
 			imagePointer = &image[0]; //we've sent the whole image at this point, so reset the image pointer
 			failCount = 0; //reset fail counter too
 			sentTotal = 0; //reset total bytes sent counter

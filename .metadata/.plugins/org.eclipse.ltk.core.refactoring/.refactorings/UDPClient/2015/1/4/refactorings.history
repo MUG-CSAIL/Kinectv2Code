@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<session version="1.0">
+<refactoring comment="Rename type &apos;clientcode.frameProcessor&apos; to &apos;FrameProcessorThread&apos;&#x0D;&#x0A;- Original project: &apos;UDPClient&apos;&#x0D;&#x0A;- Original element: &apos;clientcode.frameProcessor&apos;&#x0D;&#x0A;- Renamed element: &apos;clientcode.FrameProcessorThread&apos;&#x0D;&#x0A;- Update references to refactored element&#x0D;&#x0A;- Update textual occurrences in comments and strings" description="Rename type &apos;frameProcessor&apos;" flags="589830" id="org.eclipse.jdt.ui.rename.type" input="/src&lt;clientcode{frameProcessor.java[frameProcessor" matchStrategy="1" name="FrameProcessorThread" qualified="false" references="true" similarDeclarations="false" stamp="1422053799427" textual="false" version="1.0"/>
+</session>
