@@ -5,6 +5,7 @@ import java.net.*;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 //import clientcode.FrameProcessorThread;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 public class Client {
 	static final int FRAME_SIZE = 434176;
@@ -12,10 +13,28 @@ public class Client {
 	static final int CLIENT_PORT = 10801;
 	static final int SERVER_PORT = 10800;
 	static Object lock = new Object(); //just to have something to lock on
+	char identifierPrefix = 'y';
+	char identifierSuffix = 'z';
+	
+	/**
+	 * Deprecated, was for debugging
+	 * @param packet
+	 * @return
+	 */
+	int checkPacket(byte[] packet){
+		if(packet[0] != 'y'){
+			return -1;
+		}
+		if(packet[BUFSIZE-1] != 'z'){
+			return -1;
+		}
+		return 0;
+	}
 	
 	public static void main(String args[]) throws Exception
 	   {
-		ByteBuffer image = ByteBuffer.allocate(FRAME_SIZE); //place to store image.
+		//ByteBuffer image = ByteBuffer.allocate(FRAME_SIZE); //place to store image.
+		ConcurrentLinkedQueue<Byte> image = new ConcurrentLinkedQueue<Byte>();
 	      BufferedReader inFromUser =
 	         new BufferedReader(new InputStreamReader
 	                     (System.in)); //to get start message to send.
@@ -42,17 +61,29 @@ public class Client {
 	    	  System.err.println("Send failed to complete.");
 	    	  e.printStackTrace();
 	      }
-	      int fragNum;
-	      int sequenceNum;
+	      byte fragNum;
+	      byte sequenceNum;
 	      //main loop goes below when this works  
 	      //synchronized(lock){
-	      clientSocket.receive(receivePacket); //receive frame fragment
-	      //fragNum = receiveData[1]; 
-	      //sequenceNum = receiveData[0];
-	      //receiveData = Arrays.copyOfRange(receiveData, 2, receiveData.length);
-	      //image.put(receiveData, BUFSIZE*fragNum, receiveData.length);
-	      //System.out.printf("Got frame: %s with length %d", new String(receiveData), new String(receiveData).length());
-	      System.out.printf("Got frame - Sequence Number : %d | Fragment Number : %d | last thing: %c\n", receiveData[0], receiveData[1], receiveData[65506]);
+	      int receiveCount = 0;
+	      int dataLeft = FRAME_SIZE;
+	      int recvlen;
+	      while (receiveCount < 7){
+	    	  clientSocket.receive(receivePacket); //receive frame fragment
+	    	  recvlen = receiveData.length;
+	    	  sequenceNum = receiveData[0];
+		      fragNum = receiveData[1]; 
+		      //image.put(Arrays.copyOfRange(receiveData, 2, Math.min(dataLeft, recvlen)), 0, Math.min(dataLeft, recvlen-2));
+		      for(int i = 2; i < Math.min(dataLeft, recvlen); i++){
+		    	  image.add(receiveData[i]);
+		      }
+		      
+		      //System.out.printf("Got frame: %s with length %d", new String(receiveData), new String(receiveData).length());
+		      System.out.printf("Got frame - Sequence Number : %d | Fragment Number : %d | last thing: %c\n", sequenceNum, fragNum, receiveData[Math.min(dataLeft, 65506)]);
+		      dataLeft -= (recvlen-2);
+		      receiveCount +=1;
+	      }
+	      System.out.println("Got all packets! yaaaay!");
 	      clientSocket.close();
 	      //}
 	    	  
