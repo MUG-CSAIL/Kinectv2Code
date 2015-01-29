@@ -105,7 +105,7 @@ public class FrameProcessorThread implements Runnable {
 			for(int i = 2; i < Math.min(dataLeft, recvlen); i++){
 				imageBuffer.add(receiveData[i]);
 			}
-			System.out.printf("Got frame - Sequence Number : %d | Fragment Number : %d | last thing: %c\n", sequenceNum, fragNum, receiveData[Math.min(dataLeft, 65506)]);
+			System.out.printf("Got frame - Sequence Number : %d | Fragment Number : %d | last thing: %c\n", sequenceNum, fragNum, receiveData[Math.min(dataLeft-1, 65506)]);
 			dataLeft -= (recvlen-2);
 			receiveCount +=1;
 		}

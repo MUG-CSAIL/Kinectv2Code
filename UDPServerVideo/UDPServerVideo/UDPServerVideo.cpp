@@ -91,10 +91,12 @@ int setUpSockAddrs(SOCKET serverSocket){
 }
 
 int createFakeImage(char * imagePointer){
+	int dataLeft = FRAME_SIZE;
 	for (int i = 0; i < NEEDED_PACKETS; i++){
 		char number = '1' + i;
-		memset(imagePointer, number, BUFSIZE);
+		memset(imagePointer, number, min(dataLeft, BUFSIZE));
 		imagePointer += BUFSIZE;
+		dataLeft -= BUFSIZE;
 	}
 	return 0;
 }
@@ -135,7 +137,9 @@ void main(int argc, _TCHAR* argv[])
 		BYTE sequenceNum = 0; //for bookkeeping, the frame number in our infinite sequence, ranges from 0-255 then loops.
 		BYTE fragmentNum = 0; //for bookkeeping, what fragment of the current frame is this packet? from 0-6 for 7 total frags
 		char * packetPointer = &packet[0];
-		int remainingSize = sizeof(packet) - sizeof(sequenceNum) - sizeof(fragmentNum); //sizeof packet - sizeof sequenceNum - sizeof fragmentNum
+		int remainingSize = sizeof(packet) - sizeof(sequenceNum) - sizeof(fragmentNum); //sizeof packet - sizeof sequenceNum - sizeof fragmentNum.
+		//Since sizeof(char) is defined to be 1, this is actually sizeof(packet) - 2.
+
 		/* This will be the main loop for our transmission function. What we want to do is as follows.
 		 * We have an image buffer that contains the entire image. This is too big to send in one packet.
 		 * So we have a packet buffer into which we can copy parts of the image. We also need to modify the packet
@@ -180,7 +184,7 @@ void main(int argc, _TCHAR* argv[])
 			sentTotal += (sent-2);
 			fragmentNum += 1;
 			//packet pointer now points to beyond fragment number, which needs to be fixed. Will do so in the loop below.
-			while (sentTotal < FRAME_SIZE) //until we finish sending the image, repeat the above with one slight changes
+			while (sentTotal < FRAME_SIZE) //until we finish sending the image, repeat the above with one slight change
 			{
 				ZeroMemory(packet, sizeof(packet)); //clear out packet
 				packetPointer = &packet[0]; //reset packet pointer
@@ -188,7 +192,7 @@ void main(int argc, _TCHAR* argv[])
 				packetPointer += sizeof(sequenceNum); //increment pointer
 				memset(packetPointer, fragmentNum, sizeof(fragmentNum)); //set frag number
 				packetPointer += sizeof(fragmentNum); //increment pointer
-				memcpy(packetPointer, imagePointer, min(sizeof(packet)-2, dataLeft)); //put image data in rest of packet
+				memcpy(packetPointer, imagePointer, min(remainingSize, dataLeft)); //put image data in rest of packet
 				sent = sendto(serverSocket, packet, sizeof(packet), 0, (sockaddr*)&to, tolen); //try to send the rest of the image
 				if (sent == SOCKET_ERROR)
 				{
@@ -202,7 +206,7 @@ void main(int argc, _TCHAR* argv[])
 					}
 					continue;
 				}
-				imagePointer += min((sizeof(packet)-2), dataLeft); //increment image pointer.
+				imagePointer += min(remainingSize, dataLeft); //increment image pointer.
 				fragmentNum += 1; //increase fragment number
 				dataLeft -= (sent-2); //again, 2 less than was actually sent because of header.
 				sentTotal += (sent-2); //increase how much we've transmitted
