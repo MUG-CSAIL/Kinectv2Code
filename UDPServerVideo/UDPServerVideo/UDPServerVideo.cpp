@@ -175,9 +175,9 @@ void main(int argc, _TCHAR* argv[])
 				packetPointer = &packet[0]; //reset packet pointer
 				continue; //don't do any further adjustments, just zero the packet and try again.
 			}
-			imagePointer += sizeof(packet)-2; //increment image pointer, since we sent successfully. -2 because of header.
+			imagePointer += (sizeof(packet)-2); //increment image pointer, since we sent successfully. -2 because of header.
 			dataLeft -= (sent-2); //we have two extra bytes left to transmit because of the space taken by the header
-			sentTotal += sent-2;
+			sentTotal += (sent-2);
 			fragmentNum += 1;
 			//packet pointer now points to beyond fragment number, which needs to be fixed. Will do so in the loop below.
 			while (sentTotal < FRAME_SIZE) //until we finish sending the image, repeat the above with one slight changes
@@ -202,10 +202,10 @@ void main(int argc, _TCHAR* argv[])
 					}
 					continue;
 				}
-				imagePointer += min(sizeof(packet)-2, dataLeft); //increment image pointer.
+				imagePointer += min((sizeof(packet)-2), dataLeft); //increment image pointer.
 				fragmentNum += 1; //increase fragment number
 				dataLeft -= (sent-2); //again, 2 less than was actually sent because of header.
-				sentTotal += sent-2; //increase how much we've transmitted
+				sentTotal += (sent-2); //increase how much we've transmitted
 				Sleep(7); //# of clock cycle delays so we don't overload receiving buffer. Try to take this out when client is multithreaded. 
 			}
 			printf("Full image has been sent. Resetting data.\n");
