@@ -135,7 +135,7 @@ void main(int argc, _TCHAR* argv[])
 		BYTE sequenceNum = 0; //for bookkeeping, the frame number in our infinite sequence, ranges from 0-255 then loops.
 		BYTE fragmentNum = 0; //for bookkeeping, what fragment of the current frame is this packet? from 0-6 for 7 total frags
 		char * packetPointer = &packet[0];
-
+		int remainingSize = sizeof(packet) - sizeof(sequenceNum) - sizeof(fragmentNum); //sizeof packet - sizeof sequenceNum - sizeof fragmentNum
 		/* This will be the main loop for our transmission function. What we want to do is as follows.
 		 * We have an image buffer that contains the entire image. This is too big to send in one packet.
 		 * So we have a packet buffer into which we can copy parts of the image. We also need to modify the packet
@@ -162,7 +162,7 @@ void main(int argc, _TCHAR* argv[])
 			packetPointer += sizeof(sequenceNum); //move past the newly set sequence number 
 			memset(packetPointer, fragmentNum, sizeof(fragmentNum)); //set the fragment number as second byte
 			packetPointer += sizeof(fragmentNum); //move past the fragment number
-			memcpy(packetPointer, imagePointer, sizeof(packet)-2); //copy the packet's remaining capacity of data starting from pointer location
+			memcpy(packetPointer, imagePointer, remainingSize); //copy the packet's remaining capacity of data starting from pointer location
 			sent = sendto(serverSocket, packet, sizeof(packet), 0, (sockaddr*)&to, tolen); //try to send the packet
 			if (sent == SOCKET_ERROR){
 				failCount += 1;
@@ -176,7 +176,7 @@ void main(int argc, _TCHAR* argv[])
 				continue; //don't do any further adjustments, just zero the packet and try again.
 			}
 			imagePointer += sizeof(packet)-2; //increment image pointer, since we sent successfully. -2 because of header.
-			dataLeft -= sent+2; //we have two extra bytes left to transmit because of the space taken by the header
+			dataLeft -= (sent-2); //we have two extra bytes left to transmit because of the space taken by the header
 			sentTotal += sent-2;
 			fragmentNum += 1;
 			//packet pointer now points to beyond fragment number, which needs to be fixed. Will do so in the loop below.
@@ -204,7 +204,7 @@ void main(int argc, _TCHAR* argv[])
 				}
 				imagePointer += min(sizeof(packet)-2, dataLeft); //increment image pointer.
 				fragmentNum += 1; //increase fragment number
-				dataLeft -= sent+2; //since subtracting, have to increment
+				dataLeft -= (sent-2); //again, 2 less than was actually sent because of header.
 				sentTotal += sent-2; //increase how much we've transmitted
 				Sleep(7); //# of clock cycle delays so we don't overload receiving buffer. Try to take this out when client is multithreaded. 
 			}

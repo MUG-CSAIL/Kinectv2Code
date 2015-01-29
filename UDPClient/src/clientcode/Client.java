@@ -13,28 +13,38 @@ public class Client {
 	static final int CLIENT_PORT = 10801;
 	static final int SERVER_PORT = 10800;
 	static Object lock = new Object(); //just to have something to lock on
-	char identifierPrefix = 'y';
-	char identifierSuffix = 'z';
-	
-	/**
-	 * Deprecated, was for debugging
-	 * @param packet
-	 * @return
-	 */
-	int checkPacket(byte[] packet){
-		if(packet[0] != 'y'){
-			return -1;
-		}
-		if(packet[BUFSIZE-1] != 'z'){
-			return -1;
-		}
-		return 0;
-	}
+		
 	
 	public static void main(String args[]) throws Exception
-	   {
-		//ByteBuffer image = ByteBuffer.allocate(FRAME_SIZE); //place to store image.
-		ConcurrentLinkedQueue<Byte> image = new ConcurrentLinkedQueue<Byte>();
+	{
+		ByteBuffer image = ByteBuffer.allocate(FRAME_SIZE); //place to store image.
+		//ConcurrentLinkedQueue<Byte> imageBuffer = new ConcurrentLinkedQueue<Byte>();
+		//Byte[] image;
+		ConcurrentLinkedQueue<Byte> imageBuffer = new ConcurrentLinkedQueue<Byte>();
+		FrameProcessorThread frameReader = new FrameProcessorThread(imageBuffer, CLIENT_PORT, SERVER_PORT);
+		frameReader.run();
+		int transferCount = 0;
+		while(true)
+		{
+			while(!imageBuffer.isEmpty() && transferCount < FRAME_SIZE)
+			{
+				image.put(imageBuffer.poll());
+				transferCount++;
+				System.out.println(transferCount);
+			}
+			//For some reason, we're two bytes short of the limit.
+			if(transferCount >= FRAME_SIZE){
+				break;
+			}
+		}
+		System.out.println("Broke out of loop!");
+	}
+}
+	
+	/* Working version of main if we need reversion outside of git backup or want to retest something
+	 * 
+	 *ConcurrentLinkedQueue<Byte> image = new ConcurrentLinkedQueue<Byte>();
+		
 	      BufferedReader inFromUser =
 	         new BufferedReader(new InputStreamReader
 	                     (System.in)); //to get start message to send.
@@ -88,6 +98,6 @@ public class Client {
 	      //}
 	    	  
 	      
-	   }
-}
-
+	   } 
+	 */
+	  
