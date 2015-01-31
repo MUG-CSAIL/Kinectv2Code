@@ -6,11 +6,12 @@
 
 #pragma comment(lib, "Ws2_32.lib")
 
-#define BUFSIZE 65507 //discovered by using getsockopt; this is the max packet size we can send.
-#define FRAME_SIZE 434176 //(512*424*2 is how that was calculated, size of a Kinect 2.0 depth image is 512x424, *2 for byte.)
-#define NEEDED_PACKETS 7 //Math.Ceiling(FRAME_SIZE / BUFSIZE)
+#define PACKET_SIZE 65507 //discovered by using getsockopt; this is the max packet size we can send. I've tried 65508, critical failure. 
+#define PACKET_DATA_SIZE PACKET_SIZE-2 //this is how much data will be in each packet, ignoring header bytes. 
+#define FRAME_SIZE 65505 //434176 //(512*424*2 is how that was calculated, size of a Kinect 2.0 depth image is 512x424, *2 for byte.)
+#define NEEDED_PACKETS 7 //Math.Ceiling(FRAME_SIZE / PACKET_DATA_SIZE)
 
-//Code to discover optimal buffer size to use for BUFSIZE
+//Code to discover optimal buffer size to use for PACKET_SIZE
 /*
 int optlen = sizeof(int);
 int optval;
@@ -91,13 +92,17 @@ int setUpSockAddrs(SOCKET serverSocket){
 }
 
 int createFakeImage(char * imagePointer){
-	int dataLeft = FRAME_SIZE;
-	for (int i = 0; i < NEEDED_PACKETS; i++){
-		char number = '1' + i;
-		memset(imagePointer, number, min(dataLeft, BUFSIZE));
-		imagePointer += BUFSIZE;
-		dataLeft -= BUFSIZE;
-	}
+	
+	BYTE startPixel = '1';
+	BYTE middlePixel = '2';
+	BYTE lastPixel = '3';
+	memset(imagePointer, startPixel, sizeof(startPixel));
+	imagePointer += sizeof(startPixel);
+
+	memset(imagePointer, middlePixel, FRAME_SIZE-2);
+	imagePointer += (FRAME_SIZE - 2);
+	
+	memset(imagePointer, lastPixel, sizeof(lastPixel));
 	return 0;
 }
 
@@ -118,16 +123,28 @@ void main(int argc, _TCHAR* argv[])
 	
 	int failCount = 0;
 	int tolen = sizeof(to); //calculate size, we'll use this later.
-	char packet[BUFSIZE]; //buffer where we'll put messages.
+	char packet[PACKET_SIZE]; //buffer where we'll put messages.
 	ZeroMemory(packet, sizeof(packet));
 	char image[FRAME_SIZE];
 	ZeroMemory(image, sizeof(image));
 	char * imagePointer = &image[0];
-	createFakeImage(imagePointer); //simple for loop to make a tailored image so I know if it works. DOES NOT RESET IMAGE POINTER WHEN DONE.
+
+	BYTE startPixel = '1';
+	BYTE middlePixel = '2';
+	BYTE lastPixel = '3';
+
+	for (int i = 1; i < FRAME_SIZE - 1; i++){
+		image[i] = middlePixel;
+	}
+	image[0] = startPixel;
+	image[FRAME_SIZE - 1] = lastPixel;
+
+	//createFakeImage(imagePointer); //simple method to make a tailored image so I know if it works. DOES NOT RESET IMAGE POINTER WHEN DONE.
 	imagePointer = &image[0]; //reset image pointer, since it wasn't done in the method. much easier to do it safely here.
 	
-	printf("Waiting...\n"); //print to console to show server is up and waiting for a connection, just a test before beginning
-	if (recvfrom(serverSocket, packet, sizeof(packet), 0, (sockaddr*)&to, &tolen) != SOCKET_ERROR) //if recvfrom succeeds,
+	//printf("Waiting...\n"); //print to console to show server is up and waiting for a connection, just a test before beginning
+	//if (recvfrom(serverSocket, packet, sizeof(packet), 0, (sockaddr*)&to, &tolen) != SOCKET_ERROR) //if recvfrom succeeds,
+	if (true) // no message exchange, just start throwing
 	{
 		//printf("Received message from client: %s\n", packet);
 		int sent; //how many bytes we just send with our latest attempt at transmission
@@ -210,7 +227,7 @@ void main(int argc, _TCHAR* argv[])
 				fragmentNum += 1; //increase fragment number
 				dataLeft -= (sent-2); //again, 2 less than was actually sent because of header.
 				sentTotal += (sent-2); //increase how much we've transmitted
-				Sleep(7); //# of clock cycle delays so we don't overload receiving buffer. Try to take this out when client is multithreaded. 
+				Sleep(100); //# of clock cycle delays so we don't overload receiving buffer. Try to take this out when client is multithreaded. 
 			}
 			printf("Full image has been sent. Resetting data.\n");
 			break;
