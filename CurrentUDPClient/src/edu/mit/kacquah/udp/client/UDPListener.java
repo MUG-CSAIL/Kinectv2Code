@@ -37,7 +37,7 @@ public class UDPListener extends Thread {
       byte[] packetData = new byte[Client.MAX_UDP_BUFFER_SIZE];
       System.arraycopy(receivePacket.getData(), 0, packetData, 0,
           receivePacket.getLength());
-      System.out.printf("received seq num %d, frag num %d, indexes 2 3 5 7 65503 66506 are %c %c %c %c %c %c\n", packetData[0], packetData[1], packetData[2], packetData[3], packetData[5], packetData[7], packetData[65503], packetData[65506]);
+      //System.out.printf("received seq num %d, frag num %d, indexes 2 3 5 7 65503 66506 are %c %c %c %c %c %c\n", packetData[0], packetData[1], packetData[2], packetData[3], packetData[5], packetData[7], packetData[65503], packetData[65506]);
       // Queue
       packetQueue.add(packetData);
     }

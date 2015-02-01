@@ -11,7 +11,7 @@ public class Client {
   public static int CLIENT_PORT = 10801;
   
   public static int MAX_UDP_BUFFER_SIZE = 65507; //65507/10;
-  public static int NUMBER_OF_PACKETS_PER_IMAGE = 1;
+  public static int NUMBER_OF_PACKETS_PER_IMAGE = 7;
   public static int PACKET_SIZE = MAX_UDP_BUFFER_SIZE;
   public static int PACKET_DATA_SIZE = MAX_UDP_BUFFER_SIZE - 2;
   // Number of packets needed per image. Note how we subtract 2 from the
@@ -36,22 +36,22 @@ public class Client {
 	    
 	    // Debug print
 	    byte[] packetData = udpListener.getNextPacket();
-	    String received = new String(packetData, 0, packetData.length);
-	    System.out.println(received);
+	    //String received = new String(packetData, 0, packetData.length);
+	    //System.out.println(received);
 	    System.out.println("Got it.");
-	    System.out.printf("received seq num %d, frag num %d, indexes 2 3 5 7 65503 66506 are %c %c %c %c %c %c\n", packetData[0], packetData[1], packetData[2], packetData[3], packetData[5], packetData[7], packetData[65503], packetData[65506]);
+	    System.out.printf("received seq num %d, frag num %d\n", packetData[0] & 0xFF, packetData[1] & 0xFF);
 	    
 	    // Construct image
       constructor.processPacketData(packetData);
       if (constructor.hasNextKinectImage()) {
         KinectImage image = constructor.getNextKinectImage();
         // Check for image correctness then quit.
-        if (!image.checkImage()) {
+        if (!image.checkByteImage()) {
           System.out.println("Something went wrong");
           System.exit(-1);
         } else {
           System.out.println("Image is correct!!!");
-          System.exit(0);
+          //System.exit(0);
         }
       }
 	    

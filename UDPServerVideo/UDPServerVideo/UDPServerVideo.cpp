@@ -8,7 +8,7 @@
 
 #define PACKET_SIZE 65507 //discovered by using getsockopt; this is the max packet size we can send. I've tried 65508, critical failure. 
 #define PACKET_DATA_SIZE PACKET_SIZE-2 //this is how much data will be in each packet, ignoring header bytes. 
-#define FRAME_SIZE 65505 //434176 //(512*424*2 is how that was calculated, size of a Kinect 2.0 depth image is 512x424, *2 for byte.)
+#define FRAME_SIZE 434176 //(512*424*2 is how that was calculated, size of a Kinect 2.0 depth image is 512x424, *2 for byte.)
 #define NEEDED_PACKETS 7 //Math.Ceiling(FRAME_SIZE / PACKET_DATA_SIZE)
 
 //Code to discover optimal buffer size to use for PACKET_SIZE
@@ -133,13 +133,8 @@ void main(int argc, _TCHAR* argv[])
 	BYTE middlePixel = '2';
 	BYTE lastPixel = '3';
 
-	for (int i = 1; i < FRAME_SIZE - 1; i++){
-		image[i] = middlePixel;
-	}
-	image[0] = startPixel;
-	image[FRAME_SIZE - 1] = lastPixel;
-
-	//createFakeImage(imagePointer); //simple method to make a tailored image so I know if it works. DOES NOT RESET IMAGE POINTER WHEN DONE.
+	
+	createFakeImage(imagePointer); //simple method to make a tailored image so I know if it works. DOES NOT RESET IMAGE POINTER WHEN DONE.
 	imagePointer = &image[0]; //reset image pointer, since it wasn't done in the method. much easier to do it safely here.
 	
 	//printf("Waiting...\n"); //print to console to show server is up and waiting for a connection, just a test before beginning
@@ -227,10 +222,10 @@ void main(int argc, _TCHAR* argv[])
 				fragmentNum += 1; //increase fragment number
 				dataLeft -= (sent-2); //again, 2 less than was actually sent because of header.
 				sentTotal += (sent-2); //increase how much we've transmitted
-				Sleep(100); //# of clock cycle delays so we don't overload receiving buffer. Try to take this out when client is multithreaded. 
+				Sleep(1); //# of clock cycle delays so we don't overload receiving buffer. Try to take this out when client is multithreaded. 
 			}
 			printf("Full image has been sent. Resetting data.\n");
-			break;
+			//break;
 			imagePointer = &image[0]; //we've sent the whole image at this point, so reset the image pointer
 			failCount = 0; //reset fail counter too
 			sentTotal = 0; //reset total bytes sent counter

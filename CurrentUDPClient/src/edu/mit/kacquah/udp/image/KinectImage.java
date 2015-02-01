@@ -4,8 +4,8 @@ public class KinectImage {
 
   public static final int IMAGE_WIDTH = 512;
   public static final int IMAGE_HEIGHT = 424;
-  public static final int IMAGE_LENGTH = 65505;//IMAGE_WIDTH * IMAGE_HEIGHT;
-  public static final int IMAGE_BYTES_LENGTH = 65505; //IMAGE_LENGTH * 2;
+  public static final int IMAGE_LENGTH = IMAGE_WIDTH * IMAGE_HEIGHT;
+  public static final int IMAGE_BYTES_LENGTH = IMAGE_LENGTH * 2;
 
   public static final byte FIRST_PIXEL = '1';
   public static final byte MIDDLE_PIXEL = '2';
@@ -14,7 +14,7 @@ public class KinectImage {
   public short pixels[];
 
   public KinectImage() {
-    pixels = new short[IMAGE_LENGTH];
+    pixels = new short[IMAGE_BYTES_LENGTH];
   }
 
   /**
@@ -51,6 +51,24 @@ public class KinectImage {
       return false;
     }
     return true;
+  }
+  
+  public boolean checkByteImage(){
+	  for (int i = 1; i < IMAGE_BYTES_LENGTH - 1; ++i) {
+		  if (pixels[i] != MIDDLE_PIXEL) {
+			  System.out.printf("Middle pixel at %d wrong: %c\n", i, pixels[i]);
+			  return false;
+		  }
+	  }
+	  if (pixels[0] != FIRST_PIXEL) {
+		  System.out.println("First pixel wrong.");
+		  return false;
+	  }
+	  if (pixels[IMAGE_BYTES_LENGTH - 1] != LAST_PIXEL) {
+		  System.out.println("Last pixel wrong.");
+		  return false;
+	  }
+	  return true;
   }
 
   /**
@@ -90,7 +108,7 @@ public class KinectImage {
 
   public void copyBytes(byte[] bytes){
 	  for(int i = 0; i < bytes.length; i++){
-		  System.out.printf("Byte %d is a %c.\n", i, bytes[i]);
+		  //System.out.printf("Byte %d is a %c.\n", i, bytes[i]);
 		  pixels[i] = bytes[i];
 	  }
   }

@@ -32,8 +32,8 @@ public class KinectImageConstructor {
   }
   
   public void processPacketData(byte[] packedData) {
-    int packetSequenceNumber = packedData[0];
-    int packetPartNumber = packedData[1];
+    int packetSequenceNumber = packedData[0] & 0xFF;
+    int packetPartNumber = packedData[1] & 0xFF;
     System.out.println("Packet data length: " +  packedData.length);
     
     // Are we are getting a new image frame?
