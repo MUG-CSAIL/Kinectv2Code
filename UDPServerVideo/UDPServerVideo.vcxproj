@@ -71,7 +71,11 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="UDPServerVideo\main.cpp" />
     <ClCompile Include="udpservervideo\UDPServerVideo.cpp" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="UDPServerVideo\UDPServerVideo.h" />
   </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">

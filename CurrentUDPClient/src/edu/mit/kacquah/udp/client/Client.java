@@ -9,7 +9,7 @@ public class Client {
   // Common globa constants
   public static int SERVER_PORT = 10800;
   public static int CLIENT_PORT = 10801;
-  
+  public static final boolean debugMode = false; //TODO : CHANGE IF SENDING SHORTS IN NEED OF CONVERSION
   public static int MAX_UDP_BUFFER_SIZE = 65507; //65507/10;
   public static int NUMBER_OF_PACKETS_PER_IMAGE = 7;
   public static int PACKET_SIZE = MAX_UDP_BUFFER_SIZE;
@@ -42,14 +42,15 @@ public class Client {
 	    System.out.printf("received seq num %d, frag num %d\n", packetData[0] & 0xFF, packetData[1] & 0xFF);
 	    
 	    // Construct image
-      constructor.processPacketData(packetData);
+      constructor.processPacketData(packetData, debugMode);
       if (constructor.hasNextKinectImage()) {
         KinectImage image = constructor.getNextKinectImage();
         // Check for image correctness then quit.
-        if (!image.checkByteImage()) {
+        //TODO: NEED TO CHANGE TO ACCOUNT FOR NEW PARADIGM
+        if (debugMode && !image.checkByteImage()) { //short circuit abuse
           System.out.println("Something went wrong");
           System.exit(-1);
-        } else {
+        } else { 
           System.out.println("Image is correct!!!");
           //System.exit(0);
         }

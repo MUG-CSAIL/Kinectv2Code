@@ -31,7 +31,7 @@ public class KinectImageConstructor {
     imageBytes = new byte[KinectImage.IMAGE_BYTES_LENGTH];
   }
   
-  public void processPacketData(byte[] packedData) {
+  public void processPacketData(byte[] packedData, boolean debugMode) {
     int packetSequenceNumber = packedData[0] & 0xFF;
     int packetPartNumber = packedData[1] & 0xFF;
     System.out.println("Packet data length: " +  packedData.length);
@@ -68,8 +68,13 @@ public class KinectImageConstructor {
     //System.err.printf("PACKET RECEIVED. COUNT: %d\n", packetsReceivedCount);
     // Do we have enough packets to make an image?
     if (packetsReceivedCount == Client.NUMBER_OF_PACKETS_PER_IMAGE) {
-      //nextKinextImage.bytesToImage(imageBytes);
-    	nextKinextImage.copyBytes(imageBytes);
+    	if(debugMode){
+    		nextKinextImage.copyBytes(imageBytes);
+    	}
+    	else{
+    		nextKinextImage.bytesToImage(imageBytes);
+    	}
+    	
       hasNextKinectImage = true;
     }
   }
